@@ -59,6 +59,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
             prog='espkey_automator',
             description='Execute actions against ESPKey devices.')
+
     parser.add_argument("--config", type=str, default="config.json",
                         help="Specify configuration file.")
     parser.add_argument("--delete-log", action="store_true", help="Delete the log on the device. " \
@@ -79,6 +80,7 @@ if __name__ == "__main__":
     parser.add_argument("--restart", action="store_true", help="Restart the ESPKey.")
     parser.add_argument("--send-weigand", type=str, help="Send weigand data with length in " \
                         "format 0aabbcc:26 where there is a hex string and bit length to send.")
+
     args = parser.parse_args()
 
     try:

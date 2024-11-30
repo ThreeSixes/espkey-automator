@@ -17,6 +17,13 @@ Operational requirements:
 * [ESPKey Wiegand Interception Tool](https://www.redteamtools.com/espkey)
 * To run the script the host running the script must have the ability to reach ESPKey device using HTTP requests using web interface credentials if they've been configured.
 
+## CLI operation
+
+Coming soon.
+
+## Recipe operation
+
+Coming soon with recipe feature.
 
 ## Known limitations
 

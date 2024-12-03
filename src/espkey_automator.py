@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 from pprint import pprint
 import os
 import re
 
 from lib import Configurator
 from lib import ESPKey
+from lib import Recipe
 
 
 # If we're being called as a script.
@@ -24,7 +26,7 @@ if __name__ == "__main__":
 
         for action in actions:
             if args_unwrapped[action]:
-                print(f"HIT: {action}")
+                action_spec = action
                 action_ct += 1
         
         if action_ct != 1:
@@ -38,17 +40,15 @@ if __name__ == "__main__":
             error_str += ", ".join(action_args)
 
             raise ValueError(error_str)
-            
+
 
         # This action rules them all.
         if args.recipe:
             return ("recipe", args.recipe)
 
+        # Throw a ValueError if the weigand data isn't formatted correctly.
         if args.send_weigand:
-            if re.match(r"([0-9a-fA-F]+):([0-9]+)", args.send_weigand):
-                action = ("send_weigand", args.send_weigand)
-
-            else:
+            if not re.match(r"([0-9a-fA-F]+):([0-9]+)", args.send_weigand):
                 raise ValueError("--send-weigand value is not properly formatted.")
         
         return action_spec
@@ -71,8 +71,8 @@ if __name__ == "__main__":
     parser.add_argument("--get-diagnostics", action="store_true", help="Get diagnostic data from "\
                         "the ESPKey.")
     parser.add_argument("--get-log", action="store_true", help="Get logs from the ESPKey.")
-    parser.add_argument("--get-log-file", action="store_true", help="Get logs an ESPKey test file. "\
-                        "Human-redable timestamps can't be derived from a text file.")
+    parser.add_argument("--get-log-file", type=str, default=None, help="Get logs an ESPKey test " \
+                        "file. Human-redable timestamps can't be derived from a text file.")
     parser.add_argument("--get-version", action="store_true", help="Get ESPKey version data.")
     parser.add_argument("--recipe", type=str, default=None, help="Execute the specified recipe. " \
                         "This option is standalone. All configuration is derived from " \
@@ -97,3 +97,42 @@ if __name__ == "__main__":
     config = configurator.configuration
 
     ek = ESPKey(config)
+
+    # Action if/else stack.
+    if action == "delete_log":
+        if args.with_post:
+            print(json.dumps(ek.delete_log(post_method=True)))
+        else:
+            print(json.dumps(ek.delete_log()))
+    
+    elif action == "get_config":
+        print(json.dumps(ek.get_config()))
+    
+    elif action == "get_diagnostics":
+        print(json.dumps(ek.get_diagnostics()))
+    
+    elif action == "get_log":
+        print(json.dumps(ek.get_log()))
+
+    elif action == "get_log_file":
+        print(json.dumps(ek.get_log(file_name=args.get_log_file)))
+    
+    elif action == "get_version":
+        print(json.dumps(ek.get_version()))
+
+    elif action == "recipe":
+        rcp = Recipe(args.recipe)
+        rcp.run()
+    
+    elif action == "restart":
+        print(json.dumps(ek.restart()))
+
+    elif action == "send_weigand":
+        weigand_parts = args.send_weigand.split(":")
+        weigand_parts[1] = int(weigand_parts[1])
+        print(json.dumps(ek.send_weigand(weigand_parts[0], weigand_parts[1])))
+    
+    else:
+        print("Invalid action. Please specify an action.\n")
+        parser.print_help()
+        

@@ -1,5 +1,6 @@
 import datetime
 import json
+from pprint import pprint
 import re
 
 from .http_requests import HTTPRequests
@@ -187,7 +188,7 @@ class ESPKey:
                 # Prep data for next iteration, set current timestamp.
                 last_dts = this_dts
                 last_raw_ts = this_entry['time_raw']
-                entries_parsed.update({i: this_dts})
+                entries_parsed.update({i: this_dts.isoformat()})
 
             # Build starting point using the timing of the request made and the reported
             # microcontroller timestamp header.
@@ -202,7 +203,19 @@ class ESPKey:
                 # Prep data for next iteration, set current timestamp.
                 last_dts = this_dts
                 last_raw_ts = now_ts
-                entries_parsed.update({i: this_dts})
+                entries_parsed.update({i: this_dts.isoformat()})
+
+                # This is a very odd hack to prevent a bug that decodes the first three entries -
+                # two of them being incorrect.
+                if this_entry['time_raw'] < 600:
+                    break
+
+                # Compute delta T and datetime.
+                delta_t_ms = this_entry['time_raw'] - last_raw_ts
+                delta_t = datetime.timedelta(milliseconds=delta_t_ms)
+                this_dts = last_dts + delta_t
+
+
 
         return entries_parsed
 

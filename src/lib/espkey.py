@@ -206,8 +206,9 @@ class ESPKey:
                 entries_parsed.update({i: this_dts.isoformat()})
 
                 # This is a very odd hack to prevent a bug that decodes the first three entries -
-                # two of them being incorrect.
-                if this_entry['time_raw'] < 600:
+                # two of them being incorrect. Typically the startup time ovseserved has been
+                # between 510 and 525 ms. I'm adding padding.
+                if this_entry['time_raw'] < 540:
                     break
 
                 # Compute delta T and datetime.

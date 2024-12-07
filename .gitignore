@@ -2,5 +2,4 @@
 
 sandbox/*
 
-config.json
-recipe.json
+*.json

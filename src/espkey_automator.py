@@ -90,49 +90,52 @@ if __name__ == "__main__":
         print(f"{e}\n")
         parser.print_help()
 
-     # Configuration
-    env_var_prefix = "EKA"
-    config_file_override = os.getenv(f"{env_var_prefix}_CONFIG_FILE", args.config)
-    configurator = Configurator(env_var_prefix=env_var_prefix, config_file=config_file_override)
-    config = configurator.configuration
+    # Recipes are a special case.
+    if action[0] == "recipe":
+            rcp = Recipe(args.recipe)
+            rcp.run()
 
-    ek = ESPKey(config)
-
-    # Action if/else stack.
-    if action == "delete_log":
-        if args.with_post:
-            print(json.dumps(ek.delete_log(post_method=True)))
-        else:
-            print(json.dumps(ek.delete_log()))
-    
-    elif action == "get_config":
-        print(json.dumps(ek.get_config()))
-    
-    elif action == "get_diagnostics":
-        print(json.dumps(ek.get_diagnostics()))
-    
-    elif action == "get_log":
-        print(json.dumps(ek.get_log()))
-
-    elif action == "get_log_file":
-        print(json.dumps(ek.get_log(file_name=args.get_log_file)))
-    
-    elif action == "get_version":
-        print(json.dumps(ek.get_version()))
-
-    elif action == "recipe":
-        rcp = Recipe(args.recipe)
-        rcp.run()
-    
-    elif action == "restart":
-        print(json.dumps(ek.restart()))
-
-    elif action == "send_weigand":
-        weigand_parts = args.send_weigand.split(":")
-        weigand_parts[1] = int(weigand_parts[1])
-        print(json.dumps(ek.send_weigand(weigand_parts[0], weigand_parts[1])))
-    
+    # Perform single action.
     else:
-        print("Invalid action. Please specify an action.\n")
-        parser.print_help()
+        # Configuration
+        env_var_prefix = "EKA"
+        config_file_override = os.getenv(f"{env_var_prefix}_CONFIG_FILE", args.config)
+        configurator = Configurator(env_var_prefix=env_var_prefix, config_file=config_file_override)
+        config = configurator.configuration
+
+        ek = ESPKey(config)
+
+        # Action if/else stack.
+        if action[0] == "delete_log":
+            if args.with_post:
+                print(json.dumps(ek.delete_log(post_method=True)))
+            else:
+                print(json.dumps(ek.delete_log()))
+
+        elif action[0] == "get_config":
+            print(json.dumps(ek.get_config()))
+
+        elif action[0] == "get_diagnostics":
+            print(json.dumps(ek.get_diagnostics()))
+
+        elif action[0] == "get_log":
+            print(json.dumps(ek.get_log()))
+
+        elif action[0] == "get_log_file":
+            print(json.dumps(ek.get_log(file_name=args.get_log_file)))
+
+        elif action[0] == "get_version":
+            print(json.dumps(ek.get_version()))
+
+        elif action[0] == "restart":
+            print(json.dumps(ek.restart()))
+
+        elif action[0] == "send_weigand":
+            weigand_parts = args.send_weigand.split(":")
+            weigand_parts[1] = int(weigand_parts[1])
+            print(json.dumps(ek.send_weigand(weigand_parts[0], weigand_parts[1])))
+
+        else:
+            print("Invalid action. Please specify an action.\n")
+            parser.print_help()
         

@@ -1,4 +1,6 @@
+import datetime
 import json
+from pprint import pprint
 
 from .espkey import ESPKey
 
@@ -29,7 +31,13 @@ class Recipe:
         self.__hydrate_espkeys()
 
         self.__operations = {
-            
+            "delete_log",
+            "get_config",
+            "get_diagnostics",
+            "get_log",
+            "get_version",
+            "restart",
+            "send_weigand"
         }
 
 
@@ -71,7 +79,7 @@ class Recipe:
  
         else:
             for espkey in config:
-                if "base_url" not in espkey:
+                if "base_url" not in config[espkey]:
                     valid = False
                     errors.append(f"{espkey}: A base_url must be specified with " \
                         "an optional \"web_user\" and \"web_password\".")
@@ -82,15 +90,29 @@ class Recipe:
     @staticmethod
     def __validate_tasks(config):
         errors = []
-        valid = False
+        valid = True
 
         if len(config) == 0:
             valid = False
             errors.append("* The tasks key can't be empty.")
         
         for task in config:
-            if "operation" not in task:
-               errors.append(f"{task}: Must contain an \"operation\".") 
+            has_actions = True
+            this_task = config[task]
+
+            if "actions" not in this_task:
+                valid = False
+                errors.append(f"{task}: Must contain an \"actions[]\".") 
+                has_actions = False
+
+            if has_actions:
+                action_ct = 0
+                for action in this_task['actions']:
+                    if "operation" not in action:
+                        valid = False
+                        errors.append(f"{task}.actions.{action_ct}: Must contain an \"operation\".") 
+
+                    action_ct += 1
 
         return (valid, errors)
 
@@ -149,15 +171,23 @@ class Recipe:
 
 
     def __hydrate_espkeys(self):
+        """Create the necessary ESPKey objects to execute the recipe.
+        """
+
         for espkey in self.__recipe['espkeys']:
             this_ek_config = self.__recipe['espkeys'][espkey]
-            ek_kwargs = {"base_url": this_ek_config['base_url']}
+            ek_config = {"base_url": this_ek_config['base_url']}
 
+            # If we have creds use them.
             if 'web_user' in this_ek_config and \
                 'web_pass' in this_ek_config:
 
-                ek_kwargs.update({})
+                ek_config.update({
+                    'web_user': this_ek_config['web_user'],
+                    'web_pass': this_ek_config['web_pass']
+                })
 
+            self.__espkeys.update({espkey: ESPKey(ek_config)})
 
 
     def __load_json(self, file_name):
@@ -179,4 +209,40 @@ class Recipe:
 
 
     def run(self):
-        pass
+        for task in self.__recipe['tasks']:
+            this_task = self.__recipe['tasks'][task]
+            target_name = this_task['target']
+            target = self.__espkeys[target_name]
+
+            # Loop through actions.
+            for action in this_task['actions']:
+                if action['operation'] == "get_log":
+                    now = datetime.datetime.utcnow()
+                    pretty_json = True
+
+                    log_data = {
+                        "entries": target.get_log(),
+                        "metadata": {
+                            "espkey": target_name,
+                            "retrived": now.isoformat()
+                        }
+                    }
+
+                    if action['file_action'] == "store_with_date":
+                        json_dumps_kwargs = {}
+
+                        file_name = f"{now.strftime("%Y%m%d-%H%M%S%f")}_{target_name}_log.json"
+
+                        if 'pretty_json' in action:
+                            pretty_json=bool(action['pretty_json'])
+                        
+                        if pretty_json:
+                            json_dumps_kwargs = {
+                                "indent": 4
+                            }                        
+
+                        with open(file_name, "w") as f:
+                            json_str = json.dumps(log_data, **json_dumps_kwargs)
+                            f.write(json_str)
+                        
+                        print(f"Wrote log: {file_name}")

@@ -92,6 +92,16 @@ class Recipe:
 
 
     def __validate_tasks(self, config):
+        """Validate tasks in a given config segment.
+
+        Args:
+            config (dict): Tasks configuratoin segment.
+
+        Returns:
+            tuple(bool, list): Tuple containing a boolean value flagging the validity of the
+                               config and a list of errors.
+        """
+
         errors = []
         valid = True
 
@@ -219,6 +229,9 @@ class Recipe:
 
 
     def run(self):
+        """Execute the recipe.
+        """
+
         for task in self.__recipe['tasks']:
             run_start = datetime.datetime.utcnow()
             this_task = self.__recipe['tasks'][task]
@@ -310,8 +323,8 @@ class Recipe:
                     action_data.update({
                         "result": target.get_version()
                     })
-                
-                log_data['actions'].append(action_data)
+
+                log_data['actions'].append(action_data.copy())
 
 
             # Write log data and inform user.

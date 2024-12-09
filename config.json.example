@@ -1,5 +1,17 @@
 {
-    "base_url": "http://192.168.4.1",
-    "web_user": "myuser",
-    "web_pass": "somegreatpass"
+    "default": {
+        "base_url": "http://192.168.4.1",
+        "web_user": "myuser",
+        "web_pass": "somegreatpass"
+    },
+    "espkey1": {
+        "base_url": "http://192.168.4.1",
+        "web_user": "myuser",
+        "web_pass": "somegreatpass"
+    },
+    "espkey2": {
+        "base_url": "http://192.168.4.2",
+        "web_user": "anotheruser",
+        "web_pass": "anothergreatpass"
+    },
 }

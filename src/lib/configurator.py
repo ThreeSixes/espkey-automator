@@ -13,7 +13,7 @@ class Configurator:
         """
 
         # Configuration keys required.
-        self.__required_items = [
+        self.__required_items_per_ek = [
             "base_url",
             "web_user",
             "web_pass",
@@ -65,10 +65,11 @@ class Configurator:
         self.__config.update(args)
 
         # Validate that we have all our configuration.
-        for item in self.__required_items:
-            if item not in self.__config:
-                print(f"Error: Required configuration item missing: {item}")
-                die = True
+        for target in self.__config:
+            for item in self.__required_items_per_ek:
+                if item not in self.__config[target]:
+                    print(f"Error: Required configuration item missing: {target}.{item}")
+                    die = True
 
         # Type conversions
         for item in self.__config:
@@ -92,7 +93,7 @@ class Configurator:
         env_vars = os.environ
 
         # Search for any of our items in environment variables.
-        for item in self.__required_items:
+        for item in self.__required_items_per_ek:
             if self.__env_var_prefix:
                 item_upper = f"{self.__env_var_prefix}_{item.upper()}"
             else:

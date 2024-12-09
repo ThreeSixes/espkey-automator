@@ -92,6 +92,8 @@ if __name__ == "__main__":
     parser.add_argument("--restart", action="store_true", help="Restart the ESPKey.")
     parser.add_argument("--send-weigand", type=str, help="Send weigand data with length in " \
                         "format 0aabbcc:26 where there is a hex string and bit length to send.")
+    parser.add_argument("--target", type=str, default="default", help="Select ESPKey to use from " \
+                        "the configuration. Defaults to \"default\". Ignored if env vars are set.")
 
     args = parser.parse_args()
 
@@ -110,12 +112,27 @@ if __name__ == "__main__":
     # Perform single action.
     else:
         # Configuration
+        use_config = {}
         env_var_prefix = "EKA"
         config_file_override = os.getenv(f"{env_var_prefix}_CONFIG_FILE", args.config)
         configurator = Configurator(env_var_prefix=env_var_prefix, config_file=config_file_override)
         config = configurator.configuration
 
-        ek = ESPKey(config)
+        # Do we have the specified target?
+        if args.target in config:
+            use_config = config[args.target]
+
+        # Try to use environment variables alone.
+        else:
+            if 'base_url' in config:
+                use_config = config
+
+            else:
+                raise RuntimeError(f"No valid --target argument or {env_var_prefix}_BASE_URL env " \
+                                    "var set.")
+
+        # Use specific configuration data.
+        ek = ESPKey(use_config)
 
         # Single action if/else stack.
         if action == "delete_log":

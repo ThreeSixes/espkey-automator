@@ -1,0 +1,7 @@
+{
+    "default": {
+        "base_url": "http://192.168.4.1",
+        "web_user": "myuser",
+        "web_pass": "somegreatpass"
+    }
+}

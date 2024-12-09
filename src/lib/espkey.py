@@ -59,9 +59,19 @@ class ESPKey:
                     # Did we get a possible HID hit?
                     if len(hid_data) > 0:
                         this_entry.update({
-                            "possible_hid": hid_data
+                            "possible_hid_26": hid_data
                         })
+                
+                # Detect potential HID keypad
+                if int(this_entry['data_len'] % 2) == 0:
+                    possible_keypad = self.__parse_hid_keypad(data_groups[1])
 
+                    if possible_keypad:
+                            this_entry.update({
+                                "possible_hid_keypad": possible_keypad
+                            })
+
+                # Add entry.
                 parsed.append(this_entry)
 
             # Look for aux line toggles.
@@ -115,6 +125,53 @@ class ESPKey:
         }
 
         return parsed
+
+
+    def __parse_hid_keypad(self, hex_raw):
+
+        print("A")
+        hid_data = None
+        possible = True
+        accumulator = []
+
+        char_table = {
+            0xe1: "1", 0xd2: "2", 0xc3: "3",
+            0xb4: "4", 0xa5: "5", 0x96: "6",
+            0x87: "7", 0x78: "8", 0x69: "9",
+            0x5a: "*", 0xf0: "0", 0x4b: "#"
+        }
+
+        nibbles_ct = len(hex_raw)
+        print(f"B -> {nibbles_ct}")
+
+        # Do we have an even number of up to 5 bytes?
+        if (nibbles_ct % 2) == 0 and nibbles_ct <= 10:
+            print(f"C")
+            hex_int = int(hex_raw, base=16)
+            nibbles_half = int(nibbles_ct / 2)
+            for i in range(0, nibbles_half):
+                cursor_byte = (hex_int >> (i * 8)) & 0xff
+                # The first nibble is an NOT'd version of the second.
+                # This has only been tested with a HID iClass SE RPK40.
+                nibble_a_not = ~(cursor_byte >> 4) & 0x0f
+                nibble_b = cursor_byte & 0x0f
+
+                if nibble_a_not == nibble_b:
+                    if cursor_byte in char_table:
+                        accumulator.append(char_table[cursor_byte])
+                    else:
+                        possible = False
+
+                else:
+                    possible = False
+
+        else:
+            possible = False
+
+        if possible:
+            hid_data = accumulator
+
+        return hid_data
 
 
     def __parse_hid_26(self, hex_raw):

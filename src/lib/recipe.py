@@ -1,6 +1,7 @@
 import datetime
 import json
 from pprint import pprint
+import re
 
 from .espkey import ESPKey
 
@@ -24,37 +25,40 @@ class Recipe:
         # Run recipe validator.
         self.__validate_recipe()
 
-        self.__log_file = self.__recipe['config']['log_file']
-
         # ESPKey objects by name.
         self.__espkeys = {}
         self.__hydrate_espkeys()
 
-        self.__operations = {
-            "delete_log",
-            "get_config",
-            "get_diagnostics",
-            "get_log",
-            "get_version",
-            "restart",
-            "send_weigand"
-        }
 
+    def __validate_send_weigand(self, config):
+        """Validate specified weigand data.
 
-    @staticmethod
-    def __validate_config(config):
+        Args:
+            config (dict): send_weigand object.
+
+        Returns:
+            tuple(bool, list): Flag indicating valid data is valid and a list of errors.
+        """
+
         errors = []
         valid = True
 
         if len(config) == 0:
-            valid = False
-            errors.append("*: The config key can't be empty.")
- 
-        else:
-            if "log_file" not in config:
-                valid = False
-                errors.append("log_file: A log_file must be specified.")
+           valid = False
+           errors.append("*: The send_weigand key can't be empty.")
 
+        else:
+            if "data" not in config:
+                valid = False
+                errors.append("data: A data string must be specified.")
+
+            else:
+                if not re.match(r"^([0-9a-fA-f]+)\:([0-9]+)$", config['data']):
+                    valid = False
+                    errors.append("data: Invalid data format. It should ben in the format " \
+                        "00aabbcc:26  where 00aabbcc is the hex representation of the weigand " \
+                        "data and 26 is the length to transmit in bits.")
+            
         return (valid, errors)
 
 
@@ -87,8 +91,7 @@ class Recipe:
         return (valid, errors)
 
 
-    @staticmethod
-    def __validate_tasks(config):
+    def __validate_tasks(self, config):
         errors = []
         valid = True
 
@@ -111,6 +114,14 @@ class Recipe:
                     if "operation" not in action:
                         valid = False
                         errors.append(f"{task}.actions.{action_ct}: Must contain an \"operation\".") 
+
+                    else:
+                        if action["operation"] == "send_weigand":
+                            send_weigand_validator = self.__validate_send_weigand(action)
+
+                            if send_weigand_validator[0] is False:
+                                for error in send_weigand_validator[1]:
+                                    errors.append(f"{task}.actions.{action_ct}: {error}") 
 
                     action_ct += 1
 
@@ -136,10 +147,9 @@ class Recipe:
         error_descriptors = []
 
         # Top level config keys
-        required_top_level_keys = ["config", "espkeys", "tasks"]
+        required_top_level_keys = ["espkeys", "tasks"]
 
         top_level_key_validators = {
-            "config": self.__validate_config,
             "espkeys": self.__validate_espkeys,
             "tasks": self.__validate_tasks
         }
@@ -210,39 +220,111 @@ class Recipe:
 
     def run(self):
         for task in self.__recipe['tasks']:
+            run_start = datetime.datetime.utcnow()
             this_task = self.__recipe['tasks'][task]
             target_name = this_task['target']
             target = self.__espkeys[target_name]
 
+            file_name = f"{run_start.strftime("%Y%m%d-%H%M%S")}_{target_name}_{task}.json"
+
+            log_data = {
+                "actions": [],
+                "metadata": {
+                    "espkey": target_name,
+                    "run_start": run_start.isoformat()
+                }
+            }
+
             # Loop through actions.
             for action in this_task['actions']:
+                pretty_json = True
+                now = datetime.datetime.utcnow()
+                json_dumps_kwargs = {}
+
+                action_data = {
+                    "action": action['operation'],
+                    "run": now.isoformat()
+                }
+
+                # Get log data
                 if action['operation'] == "get_log":
-                    now = datetime.datetime.utcnow()
-                    pretty_json = True
+                    action_data.update({
+                        "result": target.get_log()
+                    })
 
-                    log_data = {
-                        "entries": target.get_log(),
-                        "metadata": {
-                            "espkey": target_name,
-                            "retrived": now.isoformat()
-                        }
-                    }
+                # Delete logs
+                elif action['operation'] == "delete_log":
+                    with_post = False
 
-                    if action['file_action'] == "store_with_date":
-                        json_dumps_kwargs = {}
+                    if 'with_post' in action:
+                        with_post = bool(action['with_post'])
+                    
+                    kwargs_delete = {"post_method": with_post}
 
-                        file_name = f"{now.strftime("%Y%m%d-%H%M%S%f")}_{target_name}_log.json"
+                    action_data.update({
+                        "result": target.delete_log(**kwargs_delete)
+                    })
 
-                        if 'pretty_json' in action:
-                            pretty_json=bool(action['pretty_json'])
-                        
-                        if pretty_json:
-                            json_dumps_kwargs = {
-                                "indent": 4
-                            }                        
+                # Get diagnostics
+                elif action['operation'] == "get_diagnostics":
+                    action_data.update({
+                        "result": target.get_diagnostics()
+                    })
 
-                        with open(file_name, "w") as f:
-                            json_str = json.dumps(log_data, **json_dumps_kwargs)
-                            f.write(json_str)
-                        
-                        print(f"Wrote log: {file_name}")
+                # Get config
+                elif action['operation'] == "get_config":
+                    action_data.update({
+                        "result": target.get_config()
+                    })
+
+                # Get config
+                elif action['operation'] == "get_config":
+                    action_data.update({
+                        "result": target.get_config()
+                    })
+
+                # Get version
+                elif action['operation'] == "get_version":
+                    action_data.update({
+                        "result": target.get_version()
+                    })
+
+                # Restart
+                elif action['operation'] == "restart":
+                    action_data.update({
+                        "result": target.restart()
+                    })
+
+                # Send weigand
+                elif action['operation'] == "send_weigand":
+                    weigand_parts = action['data'].split(":")
+                    weigand_parts[1] = int(weigand_parts[1])
+
+                    action_data.update({
+                        "result": target.send_weigand(weigand_parts[0], weigand_parts[1])
+                    })
+
+
+                # Get version
+                elif action['operation'] == "get_version":
+                    action_data.update({
+                        "result": target.get_version()
+                    })
+                
+                log_data['actions'].append(action_data)
+
+
+            # Write log data and inform user.
+            if 'pretty_json' in this_task:
+                pretty_json=bool(this_task['pretty_json'])
+            
+            if pretty_json:
+                json_dumps_kwargs.update({
+                    "indent": 4
+                })
+
+            with open(file_name, "w") as f:
+                json_str = json.dumps(log_data, **json_dumps_kwargs)
+                f.write(json_str)
+            
+            print(f"Wrote log: {file_name}")

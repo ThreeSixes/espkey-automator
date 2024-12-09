@@ -15,6 +15,19 @@ from lib import Recipe
 if __name__ == "__main__":
 
     def process_args(args):
+        """Process incoming argparase arguments.
+
+        Args:
+            args (Argparse): Parsed argparse arguments.
+
+        Raises:
+            ValueError: Exactly one action should be specified.
+            ValueError: Weigand send data is invalid.
+
+        Returns:
+            dict: A dictionary containing the necessary data to execute ther equest.
+        """
+
         action_spec = None
         action_ct = 0
         actions = ["delete_log", "get_config", "get_diagnostics", "get_log", "recipe",
@@ -54,7 +67,6 @@ if __name__ == "__main__":
         return action_spec
 
 
-
     # Get the argument parser going.
     parser = argparse.ArgumentParser(
             prog='espkey_automator',
@@ -91,7 +103,7 @@ if __name__ == "__main__":
         parser.print_help()
 
     # Recipes are a special case.
-    if action[0] == "recipe":
+    if action == "recipe":
             rcp = Recipe(args.recipe)
             rcp.run()
 
@@ -105,32 +117,32 @@ if __name__ == "__main__":
 
         ek = ESPKey(config)
 
-        # Action if/else stack.
-        if action[0] == "delete_log":
+        # Single action if/else stack.
+        if action == "delete_log":
             if args.with_post:
                 print(json.dumps(ek.delete_log(post_method=True)))
             else:
                 print(json.dumps(ek.delete_log()))
 
-        elif action[0] == "get_config":
+        elif action == "get_config":
             print(json.dumps(ek.get_config()))
 
-        elif action[0] == "get_diagnostics":
+        elif action == "get_diagnostics":
             print(json.dumps(ek.get_diagnostics()))
 
-        elif action[0] == "get_log":
+        elif action == "get_log":
             print(json.dumps(ek.get_log()))
 
-        elif action[0] == "get_log_file":
+        elif action == "get_log_file":
             print(json.dumps(ek.get_log(file_name=args.get_log_file)))
 
-        elif action[0] == "get_version":
+        elif action == "get_version":
             print(json.dumps(ek.get_version()))
 
-        elif action[0] == "restart":
+        elif action == "restart":
             print(json.dumps(ek.restart()))
 
-        elif action[0] == "send_weigand":
+        elif action == "send_weigand":
             weigand_parts = args.send_weigand.split(":")
             weigand_parts[1] = int(weigand_parts[1])
             print(json.dumps(ek.send_weigand(weigand_parts[0], weigand_parts[1])))

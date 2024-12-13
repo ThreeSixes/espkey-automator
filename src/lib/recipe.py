@@ -2,6 +2,7 @@ import datetime
 import json
 from pprint import pprint
 import re
+import time
 
 from .espkey import ESPKey
 
@@ -120,6 +121,7 @@ class Recipe:
 
             if has_actions:
                 action_ct = 0
+
                 for action in this_task['actions']:
                     if "operation" not in action:
                         valid = False
@@ -130,8 +132,22 @@ class Recipe:
                             send_weigand_validator = self.__validate_send_weigand(action)
 
                             if send_weigand_validator[0] is False:
+                                valid = False
                                 for error in send_weigand_validator[1]:
                                     errors.append(f"{task}.actions.{action_ct}: {error}") 
+
+                        elif action["operation"] == "delay":
+                            if 'sec' in action:
+                                if (action['sec']):
+                                    if not (isinstance(action['sec'], int) or
+                                            isinstance(action['sec'], float)):
+                                        valid = False
+                                        errors.append(f"{task}.actions.{action_ct}: " \
+                                            "'sec' must be an int or float. ")
+                            else:
+                                valid = False
+                                errors.append(f"{task}.actions.{action_ct}: " \
+                                    "'sec' is required.") 
 
                     action_ct += 1
 
@@ -317,12 +333,11 @@ class Recipe:
                         "result": target.send_weigand(weigand_parts[0], weigand_parts[1])
                     })
 
+                # Delay
+                elif action['operation'] == "delay":
+                    time.sleep(action['sec'])
+                    action_data.update({"delay": action['sec']})
 
-                # Get version
-                elif action['operation'] == "get_version":
-                    action_data.update({
-                        "result": target.get_version()
-                    })
 
                 log_data['actions'].append(action_data.copy())
 

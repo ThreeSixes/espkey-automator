@@ -129,7 +129,6 @@ class ESPKey:
 
     def __parse_hid_keypad(self, hex_raw):
 
-        print("A")
         hid_data = None
         possible = True
         accumulator = []
@@ -142,11 +141,9 @@ class ESPKey:
         }
 
         nibbles_ct = len(hex_raw)
-        print(f"B -> {nibbles_ct}")
 
         # Do we have an even number of up to 5 bytes?
         if (nibbles_ct % 2) == 0 and nibbles_ct <= 10:
-            print(f"C")
             hex_int = int(hex_raw, base=16)
             nibbles_half = int(nibbles_ct / 2)
             for i in range(0, nibbles_half):

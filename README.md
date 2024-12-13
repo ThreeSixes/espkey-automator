@@ -80,12 +80,29 @@ Examples:
 
 `EKA_CONFIG_FILE=otherconfig.json ./src/espkey_automator.py --delete-log`
 `EKA_BASE_URL="http://192.168.4.3" ./src/espkey_automator.py --get-log`
-`EKA_BASE_URL="http://192.168.4.3" EKA_WEB_USER="bob" EKA_WEB_PASS="bobspass" ./src/espkey_automator.py --get-version`
+`EKA_BASE_URL="http://192.168.4.3" EKA_WEB_USER="bob"` `EKA_WEB_PASS="bobspass" ./src/espkey_automator.py --get-version`
 
 
 ## Recipe operation
 
 Using a recipe allows users to automate operations against one or more ESPKeys. The main concepts here are ESPKey definitions that specify the target device that tasks are run against. Tasks are a list of actions that are run against the ESPKeys defined in the afformentioned section. Tasks are scoped to a single ESPKey, and contain one or more actions. Individual actions contain an operation and any required or optional arguments for that operation. After each task is run a JSON-formatted log file is created in the format `<YYYY><MM><DD>-<HH><mm><ss>_<target>_<task>.json` Where `<YYYY><MM><DD>-<HH><mm><ss>` is the host running the task's UTC timestamp specifying the year, month, day, hour, minutes, and seconds. `<target>` is the target ESPKey the task was run against and the `<task>` is the named task.
+
+
+### Recipe operations and properties
+
+The recpie supports a number of potential operations that can be run in sequence. Each action contains an `operation` and any mandatory or optional argument that the operation supports. Below are supported `operations` and their arguments. See the examples in the next section.
+
+* `get_log` gets the log data from an ESPKey.
+* `delete_log` gets the log data on an ESPKey.
+  *  `with_post` is an optional boolean argument that uses an HTTP post instead of GET endpoint to delete logs on some firmware versions.
+* `get_diagnostics` retrieves diagnostic data from the ESPKey.
+* `get_config` retrieves the JSON configuration data from the ESPKey.
+* `get_version` gets firmware and hardware version data from the ESPKey.
+* `restart` restarts the ESPKey.
+* `send_weigand` sends Weigand data from the ESPKey.
+  * `data` is a mandatory argument that contains a hex string representing the weigand data to be sent and a bit length separated by a colon. The bit length is the number of bits from that string to send. It's useful because some data one may want to send don't align on byte lengths. 26-bit HID data is one example that lands between 3 and 4 bytes thus a bit length of 26 should be used.
+* `delay` pauses execution of the script for a specified number of seconds.
+  * `sec` is mandatory and defines the number of seconds to delay for as an int or float.
 
 ### Example recpipe and log
 
@@ -110,18 +127,19 @@ Exmple recipe file:
     "espkeys": {
         "ek1": {
             "base_url": "http://192.168.4.1",
-            "web_user": "user",
+            "web_user": "key_user",
             "web_pass": "greatpass"
         },
         "ek2": {
             "base_url": "http://192.168.4.2",
-            "web_user": "anotheruser",
-            "web_pass": "anothergreatpass"
+            "web_user": "key_user",
+            "web_pass": "evenbetterpass"
         }
     },
     "tasks": {
         "one": {
             "target": "ek1",
+            "pretty_json": true,
             "actions": [
                 {
                     "operation": "get_version"
@@ -148,7 +166,7 @@ Exmple recipe file:
             "actions": [
                 {
                     "operation": "send_weigand",
-                    "data": ""
+                    "data": "42:8"
                 },
                 {
                     "operation": "get_log"
@@ -161,12 +179,95 @@ Exmple recipe file:
 
 The log for `ek2` task `two` has been omitted since it just perofrms a `get_log` action and there's an example of that below.
 
-Example log file named `xxxxxxxx-xxxxxx_ek1_one.json` for `ek1` task `one`:
-
-_TODO: FIX ME_
+Example log file named `<>_ek1_one.json` for `ek1` task `one`:
 
 ```json
-{"fix_me": true}
+{
+    "actions": [
+        {
+            "action": "get_version",
+            "run": "2024-12-13T16:02:04.267399",
+            "result": {
+                "version": "131",
+                "log_name": "ESPKey",
+                "ChipID": "112233"
+            }
+        },
+        {
+            "action": "get_diagnostics",
+            "run": "2024-12-13T16:02:04.340589",
+            "result": {
+                "heap": 35288,
+                "analog": 146,
+                "gpio": 24581,
+                "parsed": {
+                    "green": true,
+                    "white": true,
+                    "aux": false
+                }
+            }
+        },
+        {
+            "action": "get_log",
+            "run": "2024-12-13T16:02:04.553133",
+            "result": [
+                {
+                    "time_raw": 508,
+                    "log_msg": "Starting up!"
+                },
+                {
+                    "time_raw": 21319,
+                    "data_hex": "29b0bfc",
+                    "data_len": 26,
+                    "possible_hid_26": {
+                        "fc": 77,
+                        "cn": 34302
+                    },
+                    "dts": "2024-12-13T15:58:04.420187"
+                },
+                {
+                    "time_raw": 24005,
+                    "data_hex": "2c8636e",
+                    "data_len": 26,
+                    "possible_hid_26": {
+                        "fc": 100,
+                        "cn": 12727
+                    },
+                    "dts": "2024-12-13T15:58:07.106187"
+                },
+                {
+                    "time_raw": 26990,
+                    "data_hex": "0ec31bc",
+                    "data_len": 26,
+                    "possible_hid_26": {
+                        "fc": 118,
+                        "cn": 6366
+                    },
+                    "dts": "2024-12-13T16:00:07.322187"
+                }
+            ]
+        },
+        {
+            "action": "send_weigand",
+            "run": "2024-12-13T16:02:05.042829",
+            "result": true
+        },
+        {
+            "action": "delay",
+            "run": "2024-12-13T16:02:05.273198",
+            "delay": 2
+        },
+        {
+            "action": "delete_log",
+            "run": "2024-12-13T16:02:07.278558",
+            "result": true
+        }
+    ],
+    "metadata": {
+        "espkey": "ek1",
+        "run_start": "2024-12-13T16:02:04.267237"
+    }
+}
 ```
 
 

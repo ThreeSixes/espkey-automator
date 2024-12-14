@@ -54,14 +54,9 @@ if __name__ == "__main__":
 
             raise ValueError(error_str)
 
-
-        # This action rules them all.
-        if args.recipe:
-            return ("recipe", args.recipe)
-
         # Throw a ValueError if the weigand data isn't formatted correctly.
-        if args.send_weigand:
-            if not re.match(r"([0-9a-fA-F]+):([0-9]+)", args.send_weigand):
+        if action_spec == 'send_weigand':
+            if not re.match(r"([0-9a-fA-F]+):([0-9]+)", args_unwrapped['send_weigand']):
                 raise ValueError("--send-weigand value is not properly formatted.")
         
         return action_spec
@@ -167,4 +162,3 @@ if __name__ == "__main__":
         else:
             print("Invalid action. Please specify an action.\n")
             parser.print_help()
-        

@@ -179,7 +179,7 @@ Exmple recipe file:
 
 The log for `ek2` task `two` has been omitted since it just perofrms a `get_log` action and there's an example of that below.
 
-Example log file named `<>_ek1_one.json` for `ek1` task `one`:
+Example log file named `20241213-160204_ek1_one.json` for `ek1` task `one`:
 
 ```json
 {

@@ -61,7 +61,16 @@ class ESPKey:
                         this_entry.update({
                             "possible_hid_26": hid_data
                         })
-                
+
+                # Detect potential 4, 7, or 10 byte UID.
+                if this_entry['data_len'] in [32, 56, 80]:
+                    possible_uid = self.__parse_possible_uid(data_groups[1])
+
+                    if possible_uid:
+                        this_entry.update({
+                            "possible_uid": possible_uid
+                        })
+
                 # Detect potential HID keypad
                 if int(this_entry['data_len'] % 2) == 0:
                     possible_keypad = self.__parse_hid_keypad(data_groups[1])
@@ -127,46 +136,84 @@ class ESPKey:
         return parsed
 
 
+    def __parse_possible_uid(self, hex_raw):
+        """Parse possible 4, 7, or 10 byte UID.
+
+        Args:
+            hex_raw (str): Hex data as string.
+
+        Returns:
+            dict, None: Dict containg possible decoded data or None if no match.
+        """
+
+        uid = ""
+        metadata = []
+        data = {}
+
+        raw_len = len(hex_raw)
+
+        for cursor in range(0, raw_len, 2):
+            this_byte = f"{hex_raw[cursor + 1]}{hex_raw[cursor]}"
+
+            # Byte order is reversed.
+            uid = f"{this_byte}{uid}"
+
+        data.update({"uid": uid})
+
+        # Check for possible 4-byte random UID.
+        if raw_len == 8 and uid[0:2] == "08":
+                metadata.append("Possible random 4-byte UID used in Mifare DESFire EV2 or EV3.")
+
+        if len(metadata) > 0:
+            data.update({"metadata": metadata})
+
+        return data
+
+
     def __parse_hid_keypad(self, hex_raw):
+        """Look for possible HID keypad data.
+
+        Args:
+            hex_raw (str): String representing one or more nibbles in hex.
+
+        Returns:
+            str, None: Str for possible keypad entries or None for a failed decode.
+        """
 
         hid_data = None
         possible = True
-        accumulator = []
 
+        # HID characters - 1st nibble is the logical NOT of the second.
         char_table = {
-            0xe1: "1", 0xd2: "2", 0xc3: "3",
-            0xb4: "4", 0xa5: "5", 0x96: "6",
-            0x87: "7", 0x78: "8", 0x69: "9",
-            0x5a: "*", 0xf0: "0", 0x4b: "#"
+            "e1": "1", "d2": "2", "c3": "3",
+            "b4": "4", "a5": "5", "96": "6",
+            "87": "7", "78": "8", "69": "9",
+            "5a": "*", "f0": "0", "4b": "#"
         }
 
         nibbles_ct = len(hex_raw)
 
-        # Do we have an even number of up to 5 bytes?
+        # Do we have an even number of nibbles up to 5 bytes?
         if (nibbles_ct % 2) == 0 and nibbles_ct <= 10:
-            hex_int = int(hex_raw, base=16)
-            nibbles_half = int(nibbles_ct / 2)
-            for i in range(0, nibbles_half):
-                cursor_byte = (hex_int >> (i * 8)) & 0xff
-                # The first nibble is an NOT'd version of the second.
-                # This has only been tested with a HID iClass SE RPK40.
-                nibble_a_not = ~(cursor_byte >> 4) & 0x0f
-                nibble_b = cursor_byte & 0x0f
+            decoded = []
 
-                if nibble_a_not == nibble_b:
-                    if cursor_byte in char_table:
-                        accumulator.append(char_table[cursor_byte])
-                    else:
-                        possible = False
+            # Iterate over bytes looking for hits on the character table.
+            for start_nbl in range(0, nibbles_ct, 2):
+                end_nbl = start_nbl + 1
+                this_byte = f"{hex_raw[start_nbl]}{hex_raw[end_nbl]}"
+
+                if this_byte in char_table:
+                    decoded.append(char_table[this_byte])
 
                 else:
                     possible = False
+                    break
 
         else:
             possible = False
 
         if possible:
-            hid_data = accumulator
+            hid_data = decoded
 
         return hid_data
 
@@ -330,7 +377,7 @@ class ESPKey:
 
         return content
 
-        
+ 
     def get_diagnostics(self):
         diagnostic_data = {}
 

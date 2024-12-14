@@ -1,0 +1,51 @@
+{
+    "espkeys": {
+        "ek1": {
+            "base_url": "http://192.168.4.1",
+            "web_user": "user",
+            "web_pass": "greatpass"
+        },
+        "ek2": {
+            "base_url": "http://192.168.4.2",
+            "web_user": "anotheruser",
+            "web_pass": "anothergreatpass"
+        }
+    },
+    "tasks": {
+        "one": {
+            "target": "ek1",
+            "actions": [
+                {
+                    "operation": "get_version"
+                },
+                {
+                    "operation": "get_diagnostics"
+                },
+                {
+                    "operation": "send_weigand",
+                    "data": "42:8"
+                },
+                {
+                    "operation": "get_log"
+                },
+                {
+                    "operation": "delete_log",
+                    "with_post": true
+                }
+            ]
+        },
+        "two": {
+            "target": "ek2",
+            "pretty_json": false,
+            "actions": [
+                {
+                    "operation": "send_weigand",
+                    "data": ""
+                },
+                {
+                    "operation": "get_log"
+                }
+            ]
+        }
+    }
+}

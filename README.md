@@ -113,7 +113,7 @@ Each task under the `tasks` key contains a number of actions, each with the requ
  * Task `one` which targets `ek1`:
    * Gets the version of ESPKey softare, hardware, etc.
    * Gets the diagnostic data from the ESPKey.
-   * Sends the weigand the all `8` bits of the Weigand `data` `0x42`.
+   * Sends all `8` bits of the Weigand `data` `0x42`.
    * Gets the logs from the ESPKey.
    * Deletes the log using an HTTP POST.
  * Task `two` which targets `ek2` is more simple. It:

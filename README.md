@@ -19,7 +19,7 @@ Operational requirements:
 
 ## CLI operation
 
-Coming soon.
+Documentation coming soon. Use the `--help` for CLI options.
 
 ## Configuration
 
@@ -85,7 +85,7 @@ Examples:
 
 ## Recipe operation
 
-Using a recipe allows users to automate operations against one or more ESPKeys. The main concepts here are ESPKey definitions that specify the target device that tasks are run against. Tasks are a list of actions that are run against the ESPKeys defined in the afformentioned section. Tasks are scoped to a single ESPKey, and contain one or more actions. Individual actions contain an operation and any required or optional arguments for that operation. After each task is run a JSON-formatted log file is created in the format `<YYYY><MM><DD>-<HH><mm><ss>_<target>_<task>.json` Where `<YYYY><MM><DD>-<HH><mm><ss>` is the host running the task's UTC timestamp specifying the year, month, day, hour, minutes, and seconds. `<target>` is the target ESPKey the task was run against and the `<task>` is the named task.
+Using a recipe allows users to automate operations against one or more ESPKeys. The main concepts here are ESPKey definitions that specify the target device that tasks are run against. Recipes are specified and executed using the `--recpie` command line switch. Use `--recipe <recipe filename>` where `<file name>` a JSON-formatted recpie document. See `recipe.json.example` for an example. Tasks are a list of actions that are run against the ESPKeys defined in the afformentioned section. Tasks are scoped to a single ESPKey, and contain one or more actions. Individual actions contain an operation and any required or optional arguments for that operation. After each task is run a JSON-formatted log file is created in the format `<YYYY><MM><DD>-<HH><mm><ss>_<target>_<task>.json` Where `<YYYY><MM><DD>-<HH><mm><ss>` is the host running the task's UTC timestamp specifying the year, month, day, hour, minutes, and seconds. `<target>` is the target ESPKey the task was run against and the `<task>` is the named task.
 
 
 ### Recipe operations and properties
@@ -120,7 +120,7 @@ Each task under the `tasks` key contains a number of actions, each with the requ
    * Sends the last `26` bits of the Weigand `data` `0x025369d0`.
    * Gets the logs from the ESPKey.
 
-Exmple recipe file:
+Exmple recipe file:faq
 
 ```json
 {

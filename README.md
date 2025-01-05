@@ -2,9 +2,7 @@
 
 ## Background and requirements
 
-This project is designed to interface with an [ESPKey Wiegand Interception Tool](https://www.redteamtools.com/espkey) to perform actions from a CLI instead of manually through the web interface. Current work is underway to provide a basic CLI interface and support for recipes (ordered sets of actions) against one or more ESPKey is coming after the MVP CLI utility is complete.
-
-Once the MVP is complete this readme will be updated with proper instructions.
+This project is designed to interface with an [ESPKey Wiegand Interception Tool](https://www.redteamtools.com/espkey) to perform actions from a CLI instead of manually through the web interface. There is support for many individual operations such as getting and deleting logs, rebooting, etc. There is also support for automating workflows using recipes.
 
 ### Requirements
 

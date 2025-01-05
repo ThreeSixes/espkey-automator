@@ -19,7 +19,34 @@ Operational requirements:
 
 ## CLI operation
 
-Coming soon.
+This application is primarily designed to be operated from the CLI. Before the application can be used a configuration or recipe must be careated (see the configuration section below). All options are available in the help menu by runnig `./espkey_automator.py --help`. The context help menu is as follows:
+
+```
+usage: espkey_automator [-h] [--config CONFIG] [--delete-log] [--with-post] [--get-config] [--get-diagnostics] [--get-log] [--get-log-file GET_LOG_FILE] [--get-version] [--recipe RECIPE] [--restart]
+                        [--send-weigand SEND_WEIGAND] [--target TARGET]
+
+Execute actions against ESPKey devices.
+
+options:
+  -h, --help            show this help message and exit
+  --config CONFIG       Specify configuration file.
+  --delete-log          Delete the log on the device. Maybe used in combination with --with-post.
+  --with-post           Use with --delete-log to trigger log deletion using a POST. Used with some versions of the ESPKey firmware that don't have a /delete endpoint.
+  --get-config          Get the ESPKey's config.
+  --get-diagnostics     Get diagnostic data from the ESPKey.
+  --get-log             Get logs from the ESPKey.
+  --get-log-file GET_LOG_FILE
+                        Get logs an ESPKey test file. Human-redable timestamps can't be derived from a text file.
+  --get-version         Get ESPKey version data.
+  --recipe RECIPE       Execute the specified recipe. This option is standalone. All configuration is derived from the recipe file.
+  --restart             Restart the ESPKey.
+  --send-weigand SEND_WEIGAND
+                        Send weigand data with length in format 0aabbcc:26 where there is a hex string and bit length to send.
+  --target TARGET       Select ESPKey to use from the configuration. Defaults to "default". Ignored if env vars are set.
+```
+
+The main thing to note with the CLI is that the `--recpipe` option will override all other options since it takes control of all functionality. If you would like to run a single operation you can't specify `--recipe`.
+
 
 ## Configuration
 
